@@ -35,7 +35,20 @@ ipcache_size 1024
 ipcache_high 95
 ipcache_low 90
 
+
+memory_pools off
+buffered_logs off
+log_icp_queries off
+logfile_rotate 1
+icp_hit_stale on
+reload_into_ims on
+refresh_all_ims on
+quick_abort_min 0 KB
+quick_abort_max 0 KB
+
+
 qos_flows local-hit=0x30
+tcp_outgoing_tos 0x30 all
 
 dns_nameservers 208.67.222.222 208.67.220.220
 
