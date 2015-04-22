@@ -2,18 +2,26 @@ http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 #https_port 192.168.21.212:3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
+acl youtube_video url_regex -i ^http.*(youtube|googlevideo|all-nettools).*
+acl iphone browser -i regexp (iPhone|iPad)
+acl BB browser -i regexp (BlackBerry|PlayBook)
+acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
+acl Android browser -i regexp Android
+request_header_access User-Agent deny youtube_video !iphone !BB !Winphone !Android
+request_header_replace User-Agent Mozilla/5.0 (Windows; U; Windows NT 6.1; rv:21.0; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27 Chrome/27.0.1453.94 Gecko/20100101 Firefox/21.0 Googlebot/2.1 (+http://www.googlebot.com/bot.html)
 
-acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
-acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
-acl allowrangeurl url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
-acl allowrangeurl url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
 
-range_offset_limit none allowrangeurl
+#range_offset_limit none allowrangeurl
+range_offset_limit -1
 
-request_header_access Range deny !allowrangeurl
-reply_header_access Accept-Range deny !allowrangeurl
-reply_header_access Content-Range deny !allowrangeurl
-reply_header_access Range deny !allowrangeurl
+#request_header_access Range deny !allowrangeurl
+#reply_header_access Accept-Range deny !allowrangeurl
+#reply_header_access Content-Range deny !allowrangeurl
+#reply_header_access Range deny !allowrangeurl
 
 acl ytHack url_regex -i \/pagead\/js\/lidar\.js
 acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
