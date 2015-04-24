@@ -2,13 +2,13 @@ http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 #https_port 192.168.21.212:3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
-acl youtube_video url_regex -i ^http.*(youtube|googlevideo|all-nettools).*
-acl iphone browser -i regexp (iPhone|iPad)
-acl BB browser -i regexp (BlackBerry|PlayBook)
-acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
-acl Android browser -i regexp Android
-request_header_access User-Agent deny youtube_video !iphone !BB !Winphone !Android
-request_header_replace User-Agent Mozilla/5.0 (Windows; U; Windows NT 6.1; rv:21.0; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27 Chrome/27.0.1453.94 Gecko/20100101 Firefox/21.0 Googlebot/2.1 (+http://www.googlebot.com/bot.html)
+#acl youtube_video url_regex -i ^http.*(youtube|googlevideo|all-nettools).*
+#acl iphone browser -i regexp (iPhone|iPad)
+#acl BB browser -i regexp (BlackBerry|PlayBook)
+#acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
+#acl Android browser -i regexp Android
+#request_header_access User-Agent deny youtube_video !iphone !BB !Winphone !Android
+#request_header_replace User-Agent Mozilla/5.0 (Windows; U; Windows NT 6.1; rv:21.0; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27 Chrome/27.0.1453.94 Gecko/20100101 Firefox/21.0 Googlebot/2.1 (+http://www.googlebot.com/bot.html)
 
 #acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
 #acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
@@ -101,6 +101,8 @@ sslproxy_flags DONT_VERIFY_PEER
 sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
 sslcrtd_children 50 startup=50
 
+#acl store_rewrite_list url_regex -i \.xvideos\.com\/.*(3gp|mpg|flv|mp4)
+#acl store_rewrite_list url_regex -i xhamster\.com\/.*flv
 acl patchini url_regex -i ^https?\:\/\/.*\.ini$
 acl semuaurl url_regex -i ^https?\:\/\/.*
 acl http302 http_status 302
@@ -127,6 +129,8 @@ send_hit deny semuaurl mimetext
 store_miss deny semuaurl mimehtml
 send_hit deny semuaurl mimehtml
 
+#refresh_pattern -i \.xvideos\.com\/.*(3gp|mpg|flv|mp4) 1440 99% 14400 override-expire override-lastmod ignore-private reload-into-ims ignore-must-revalidate ignore-reload store-stale
+#refresh_pattern -i xhamster\.com\/.*flv 1440 99% 14400 override-expire override-lastmod ignore-private reload-into-ims ignore-must-revalidate ignore-reload store-stale
 refresh_pattern -i ^https?\:\/\/pc-mikrotik\/youtube\/.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
 refresh_pattern . 0 95% 432000 override-expire override-lastmod refresh-ims reload-into-ims ignore-no-store ignore-private ignore-auth ignore-must-revalidate
 max_stale 1 years
