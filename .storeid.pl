@@ -139,15 +139,50 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
 
 #steampowered dota 2
 } elsif ($x=~ m/^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)/) {
-    $out="http://pc-mikrotik/media/steampowered/" . $1;
+    $out="http://helpr/media/steampowered/" . $1;
 
 #steampowered dota2 chunk-manifest
 } elsif ($x=~ m/^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)/) {
-    $out="http://pc-mikrotik/steampowered/depot/" . $1;
+    $out="http://helpr/steampowered/depot/" . $1;
 
 #animeindo
 } elsif ($x =~ m/^http:\/\/.*aisfile\.com:182\/.\/(.*)\/(.*\.(mp4|flv)).*/){
-    $out="http://pc-mikrotik/aisfile:182/" . $2;
+    $out="http://helpr/aisfile:182/" . $2;
+
+#android
+} elsif ($X =~ m/^http:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/([\w\d\-\.\%]*)\/([\d]*)\/.*/){
+    $out="http://helpr/android-apps/" . $1;
+
+#prn
+} elsif ($X =~ m/^http:\/\/.*\.xvideos\.com\/.*\/([\w\d\-\.\%]*\.(3gp|mpg|flv|mp4))\?.*/){
+    $out="http://helpr/xvideos/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+\/.*\/xh.*\/([\w\d\-\.\%]*\.flv)/){
+    $out="http://helpr/Xhamster/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)\?start=0/){
+    $out="http://helpr/Xhamster2/" . $1;
+
+} elsif ($X =~ m/^http:\/\/.*\.youjizz\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp))\?.*/){
+    $out="http://helpr/YouJizz/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.keezmovies[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
+    $out="http://helpr/KeezMovies/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.tube8[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
+    $out="http://helpr/Tube8/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.youporn[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
+    $out="http://helpr/YouPorn/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.spankwire[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
+    $out="http://helpr/SpankWire/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.pornhub[\w\d\-\.\%]*\.com.*\/([[\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
+    $out="http://helpr/PornHub/" . $1;
+
+} elsif ($X =~ m/^http:\/\/[\w\d\-\_\.\%\/]*.*\/([\w\d\-\_\.]+\.(flv|mp3|mp4|3gp|wmv))\?.*cdn\_hash.*/){
+    $out="http://helpr/media/" . $1;
 
 
 } else {
