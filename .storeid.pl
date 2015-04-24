@@ -95,15 +95,29 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     @w = m/[&?]w\=([^\&\s]*)/;
     $out="http://pc-mikrotik/safe_image/d=@d&w=@w&h=@h";
 
+#safe_image FB 1
+} elsif ($x=~ m/^https?\:\/\/fbexternal-a\.akamaihd\.net\/safe_image\.php\?d.*/) {
+    $out="http://helpr/safe_image/d=@d&w=@w&h=@h";
+
+#safe_image FB 2
+} elsif ($x=~ m/^https?\:\/\/fbstatic-a\.akamaihd\.net\/safe_image\.php\?d.*/) {
+    $out="http://helpr/safe_image/d=@d&w=@w&h=@h";
 
 #fbcdn size picture
 } elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*x.*\/.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
     $out="http://pc-mikrotik/fbcdn/" . $2;
 
-
 #fbcdn picture
 } elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
     $out="http://pc-mikrotik/fbcdn/" . $2;
+
+#fbcdn profile 1
+} elsif ($x=~ m/^https?\:\/\/fbcdn-[profile|sphotos].*\.akamaihd\.net\/h[profile|photos].*\/t1.*\/([a-z]\d+x\d+)\/(.*\.jpg)/) {
+    $out="http://helpr/fbcdn/" . $2;
+
+#fbcdn profile 2
+} elsif ($x=~ m/^https?\:\/\/.*\/([a-z]\d+x\d+)\/(.*\.(bmp|ico|jpe?g|png)).*/) {
+    $out="http://helpr/fbcdn/" . $2;
 
 #reverbnation
 } elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
@@ -162,6 +176,9 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
 
 } elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)\?start=0/){
     $out="http://helpr/Xhamster2/" . $1;
+
+} elsif ($X =~ m/^https?\:\/\/.*\/([a-z].[a-zA-Z])\/.*\.flv/){
+    $out="http://helpr/Xhamster3/" . $1;
 
 } elsif ($X =~ m/^http:\/\/.*\.youjizz\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp))\?.*/){
     $out="http://helpr/YouJizz/" . $1;
