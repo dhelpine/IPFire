@@ -177,7 +177,7 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
 } elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)\?start=0/){
     $out="http://helpr/Xhamster2/" . $1;
 
-} elsif ($X =~ m/^https?\:\/\/.*\/([a-z].[a-zA-Z])\/.*\.flv/){
+} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)/){
     $out="http://helpr/Xhamster3/" . $1;
 
 } elsif ($X =~ m/^http:\/\/.*\.youjizz\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp))\?.*/){
