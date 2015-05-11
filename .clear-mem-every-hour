@@ -1,0 +1,12 @@
+pakfire install -y nano
+nano /etc/fcron.conf
+        cari            # Location of the default editor for "fcrontab -e"
+                        editor          =       /usr/bin/vi
+        ubah menjadi    editor          =       /usr/bin/nano
+ 
+fcrontab -e
+ 
+# Automatic Clear memory usage every hour
+0 * * * * sync; echo 1 > /proc/sys/vm/drop_caches
+0 * * * * sync; echo 2 > /proc/sys/vm/drop_caches
+0 * * * * sync; echo 3 > /proc/sys/vm/drop_caches
