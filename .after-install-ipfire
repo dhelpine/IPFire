@@ -1,0 +1,50 @@
+Masuk webproxy ipfire : (https://ip-ipfire:444)
+- aktifkan Advance Proxy
+- aktifkan SSH
+
+Setelah bisa login ke putty, silahkan lakukan cat berikut :
+
+# echo RED_DEV=green0 >> /var/ipfire/ethernet/settings
+# /etc/init.d/network restart
+
+Kemudian buka web config dan aktifkan SSH Access
+
+
+Install dan jalankan auto config script
+# wget http://bahaya.kebiasaan.ml/autocfg.sh ; bash autocfg.sh
+
+Install ccze colouriz :
+# wget http://cachebox.googlecode.com/files/ipfire-ccze.tar.gz
+# tar -zxvf ipfire-ccze.tar.gz
+# cd ipfire-ccze
+# ./install
+
+Configurasi pakfire :
+# cat /opt/pakfire/etc/pakfire.conf | grep '$version' | ccze -CA
+# cat /opt/pakfire/db/core/mine | ccze -CA
+# squid -v | ccze -CA
+# dmesg | grep TPROXY | ccze -CA
+
+Bersihkan iptable nat :
+# iptables -L -t nat | ccze -CA
+
+Buat iptable mangle TPROXY :
+# iptables -L -t mangle | ccze -CA
+
+Rubah konfigurasi /etc/init.d/squid
+ -> copas
+ -> Kembali ke Webproxy ipfire /NETWORK/WEBPROXY dan tekan SAVE saja 
+
+Ketikkan perintah squid proxy :
+# squid -k parse
+# squid -z
+ 
+ Beralih ke MIKROTIK dan masukan text berikut :
+/ip firewall mangle
+add action=mark-routing chain=prerouting comment=TPROXY disabled=no dst-port=80,5050,8080,443\
+in-interface=ether2 new-routing-mark=TPROXY passthrough=no protocol=tcp
+/ip firewall mangle
+add action=mark-connection chain=prerouting comment=TPROXY disabled=no dst-port=80,5050,8080,443\
+in-interface=ether3 new-connection-mark=TPROXY passthrough=yes protocol=tcp src-address=!192.168.21.212
+/ip firewall mangle
+add action=mark-routing chain=prerouting comment=TPROXY connection-mark=TPROXY disabled=no\ in-interface=!ether3 new-routing-mark=TPROXY passthrough=no
