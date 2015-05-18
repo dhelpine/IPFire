@@ -1,0 +1,5 @@
+umount /dev/sdaXXX
+
+fsck -c /dev/sda1
+fsck -c /dev/sda3
+fsck -c /dev/sda4
