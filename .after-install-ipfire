@@ -48,3 +48,5 @@ add action=mark-connection chain=prerouting comment=TPROXY disabled=no dst-port=
 in-interface=ether3 new-connection-mark=TPROXY passthrough=yes protocol=tcp src-address=!192.168.21.212
 /ip firewall mangle
 add action=mark-routing chain=prerouting comment=TPROXY connection-mark=TPROXY disabled=no\ in-interface=!ether3 new-routing-mark=TPROXY passthrough=no
+
+0800278e8e4a
