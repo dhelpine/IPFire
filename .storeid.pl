@@ -119,6 +119,14 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
 } elsif ($x=~ m/^https?\:\/\/.*\/([a-z]\d+x\d+)\/(.*\.(bmp|ico|jpe?g|png)).*/) {
     $out="http://helpr/fbcdn/" . $2;
 
+#‎safe_image‬ FB
+} elsif ($x=~ m/^https?\:\/\/.*(fbexternal|external).*\.fbcdn\.net\/safe_image\.php\?.*(url\=.*)/) {
+    $out="http://helpr/fbcdn/" . $2;
+
+‪#‎fbcdn‬-akamaihd-FB
+} elsif ($x=~ m/^https?\:\/\/.*(profile|sphotos|photos|scontent|dragon|video).*\.(akamaihd|fbcdn)\.net\/(hprofile|hphotos|hvideo).*\/(([a-z]\d+x\d+)|(.*))\/(.*\.(bmp|gif|ico|jpe?g|png|mp4|flv|avi|mkv|m4v|mov|wmv|3gp|mpe?g)).*/) {
+    $out="http://helpr/fbcdn/" . $4 / $7";
+
 #reverbnation
 } elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
     $out="http://pc-mikrotik/reverbnation/" . $1;
