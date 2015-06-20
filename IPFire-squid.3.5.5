@@ -1,0 +1,264 @@
+IPFIRE upgrade squid 3.5.5
+1. copy kan file "s355.tar.gz" (https://drive.google.com/open?id=0B3i0cwEYlyL-VUJJSl9jeHIyakk&authuser=0)  ke /root via winscp
+2. via putty, menuju ke /root dengan cd /root
+3. /etc/init.d/squid stop
+4. tar -xvf squid-3.5.2-for-ipfire.tar.gz -C /
+5. hapus cache di /var/log/cache dengan winscp
+6. http://pastebin.com/raw.php?i=JjAUXmZK --->squid.conf.pre.local
+===================================================================================
+http_port 192.168.21.212:3128 tproxy
+https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
+
+reload_into_ims on
+refresh_all_ims on
+maximum_object_size_in_memory 0 KB
+
+strip_query_terms off
+cache_swap_high 95
+cache_swap_low 90
+qos_flows local-hit=0x30
+dns_nameservers 208.67.222.222 208.67.220.220
+
+### semua acl
+acl mimetipe rep_mime_type mime-type text/html
+acl mimetipe rep_mime_type mime-type text/plain
+acl ytHack url_regex -i \/pagead\/js\/lidar\.js
+acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
+acl urltohttp url_regex -i ^http.*(youtube|google).*
+acl windowsbrowser browser -i regexp .*Windows.*
+acl ythtml5 url_regex -i ^http.*videoplayback.*cver\=html5.*
+acl helper url_regex -i ^https?\:\/\/.*videoplayback.*
+acl helper url_regex -i ^https?\:\/\/.*youtube.*api.*stats.*ads.*
+acl helper url_regex -i ^https?\:\/\/.*youtube.*(ptracking|set_awesome|stream_204|watchtime|qoe|atr|player_204).*
+acl helper url_regex -i ^https?\:\/\/.*utm.gif.*
+acl helper url_regex -i ^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*
+acl helper url_regex -i ^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*
+acl helper url_regex -i ^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*
+acl helper url_regex -i ^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)
+acl helper url_regex -i ^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3
+acl helper url_regex -i ^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*
+acl helper url_regex -i ^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)
+acl helper url_regex -i ^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)
+acl helper url_regex -i ^https?\:\/\/.*garena.*(installer|patcher).*\?1$
+acl spliceserver ssl::server_name "/etc/squid/splicesaja.txt"
+acl rolpartial url_regex -i ^https?\:\/\/.*\/th\/patch\/.*
+acl step1 at_step SslBump1
+acl step2 at_step SslBump2
+acl step3 at_step SslBump3
+acl http302 http_status 302
+acl getmethod method GET
+
+http_access deny ythtml5
+
+request_header_access User-Agent deny urltohttp windowsbrowser
+request_header_replace User-Agent Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+
+request_header_access Range deny !rolpartial
+reply_header_access Range deny !rolpartial
+range_offset_limit -1 rolpartial
+
+#http_access deny itagyoutube
+
+#240p
+#deny_info http://pastebin.com/raw.php?i=rXxjschX ytHack
+#144p
+deny_info http://pastebin.com/raw.php?i=X4hyBt1f ytHack
+http_access deny ytHack
+
+always_direct allow all
+ssl_bump splice step1 spliceserver
+ssl_bump peek step1 all
+ssl_bump splice step2 spliceserver
+ssl_bump bump step2 all
+ssl_bump splice step3 spliceserver
+sslproxy_cert_error allow all
+sslproxy_flags DONT_VERIFY_PEER
+
+sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
+sslcrtd_children 2000 startup=100
+
+cache deny localhost
+
+store_id_program /etc/squid/storeid.pl
+store_id_children 2000 startup=100
+store_id_access deny !getmethod
+store_id_access allow helper
+store_id_access deny all
+
+store_miss deny helper http302
+send_hit deny helper http302
+store_miss deny urltohttp http302
+send_hit deny urltohttp http302
+store_miss deny rolpartial http302
+send_hit deny rolpartial http302
+#store_miss deny ytHack http302
+#send_hit deny ytHack http302
+store_miss deny mimetipe
+send_hit deny mimetipe
+
+refresh_pattern -i ^https?\:\/pc-mikrotik.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
+refresh_pattern -i ^https?\:\/\/.* 0 100% 432000 override-expire override-lastmod ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+
+max_stale 360 days
+===================================================================================
+
+7. http://pastebin.com/raw.php?i=0Mhu9JAD ---> storeid.pl
+===================================================================================
+#!/usr/bin/perl
+
+$|=1;
+while (<>) {
+@X = split;
+if ($X[0] =~ m/^https?\:\/\/.*/) {
+	$x = $X[0]; 
+	$_ = $X[0];
+	$u = $X[0];
+} else { 
+	$x = $X[1]; 
+	$_ = $X[1];
+	$u = $X[1];
+}
+
+
+#ads youtube
+if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
+    @content_v = m/[&?]content_v\=([^\&\s]*)/;
+    @cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+    unless (-e "/tmp/@cpn"){
+    open FILE, ">/tmp/@cpn";
+    print FILE "id=@content_v";
+    close FILE;
+    }
+    $out="ERR";
+
+#tracking youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*(ptracking|set_awesome).*/){
+    @video_id = m/[&?]video_id\=([^\&\s]*)/;
+    @cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+    unless (-e "/tmp/@cpn"){
+    open FILE, ">/tmp/@cpn";
+    print FILE "id=@video_id";
+    close FILE;
+    }
+    $out="ERR";
+ 
+ 
+#stream_204 youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*(stream_204|watchtime|qoe|atr).*/){
+    @docid = m/[&?]docid\=([^\&\s]*)/;
+    @cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+    unless (-e "/tmp/@cpn"){
+    open FILE, ">/tmp/@cpn";
+    print FILE "id=@docid";
+    close FILE;
+    }
+    $out="ERR";
+ 
+#player_204 youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*player_204.*/){
+    @v = m/[&?]v\=([^\&\s]*)/;
+    @cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+    unless (-e "/tmp/@cpn"){
+    open FILE, ">/tmp/@cpn";
+    print FILE "id=@v";
+    close FILE;
+    }
+    $out="ERR";
+
+#youtube
+} elsif ($x=~ m/^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*title.*/){
+    @title      = m/[%&?\/](title[%&=\/][^\&\s\/]*)/;
+    @itag      = m/[%&?\/](itag[%&=\/][^\&\s\/]*)/;
+    @range   = m/[%&?\/](range[%&=\/][^\&\s\/]*)/;
+    $out="OK store-id=http://pc-mikrotik/youtube/@itag@title@range";
+ 
+#youtube
+} elsif ($x=~ m/^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*/){
+    @cpn      = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+    @id      = m/[%&?\/](id[%&=\/][^\&\s\/]*)/;
+    @itag      = m/[%&?\/](itag[%&=\/][^\&\s\/]*)/;
+    @range  = m/[%&?\/](range[%&=\/][^\&\s\/]*)/;
+    @slices = m/[%&?\/](slices[%&=\/][^\&\s\/]*)/;
+    @mime     = m/[%&?\/](mime[%&=\/][^\&\s\/]*)/;
+    if (defined(@cpn[0])){
+        if (-e "/tmp/@cpn"){
+        open FILE, "/tmp/@cpn";
+        @id = <FILE>;
+        close FILE;}
+    }
+    $out="OK store-id=http://pc-mikrotik/youtube/@id@itag@mime@range@slices";
+
+
+
+#utmgif
+} elsif ($x=~ m/^https?\:\/\/.*utm.gif.*/) {
+    $out="OK store-id=http://pc-mikrotik/__utm.gif";
+
+#reverbnation
+} elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
+    $out="OK store-id=http://pc-mikrotik/reverbnation/" . $1;
+ 
+#playstore
+} elsif ($x=~ m/^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*/) {
+    $out="OK store-id=http://pc-mikrotik/android/market/" . $1;
+
+
+#filehost
+} elsif ($x=~ m/^https?\:\/\/.*datafilehost.*\/get\.php.*file\=(.*)/) {
+    $out="OK store-id=http://pc-mikrotik/datafilehost/" . $1;
+
+
+#speedtest
+} elsif ($x=~ m/^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*/) {
+    $out="OK store-id=http://pc-mikrotik/speedtest/" . $2;
+
+
+#filehippo
+} elsif ($x=~ m/^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)/) {
+    $out="OK store-id=http://pc-mikrotik/filehippo/" . $1;
+
+
+#4shared preview.mp3
+} elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3/) {
+    $out="OK store-id=http://pc-mikrotik/4shared/preview/" . $1;
+
+#4shared
+} elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*/) {
+    $out="OK store-id=http://pc-mikrotik/4shared/download/" . $1;
+
+#steampowered dota 2
+} elsif ($x=~ m/^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)/) {
+    $out="OK store-id=http://media/steampowered/" . $1;
+
+#steampowered dota2 chunk-manifest
+} elsif ($x=~ m/^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)/) {
+    $out="OK store-id=http://ipfire-squid/steampowered/depot/" . $1;
+
+#garena installer/patcher
+} elsif ($x=~ m/^https?\:\/\/(.*garena.*(installer|patcher).*)\?.*/) {
+    $out="OK store-id=http://ipfire-squid/" . $1;
+
+} else {
+$out="ERR";
+}
+
+if ($X[0] =~ m/^https?\:\/\/.*/) {
+	print "$out\n";
+} else {
+	print $X[0] . " " . "$out\n";
+}
+}
+===================================================================================
+
+8. http://pastebin.com/raw.php?i=r5EtgQPE ---> splicesaja.txt
+===================================================================================
+ib.bri.co.id
+95.211.61.134
+74.82.91.84
+110.92.28.161
+94.236.124.241
+94.236.46.101
+===================================================================================
+
+9. via GUI browser ---> ip-proxy:81 ---> save
+10. reboot IPFIRE
