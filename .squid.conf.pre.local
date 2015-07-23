@@ -37,6 +37,7 @@ qos_flows local-hit=0x30
 dns_nameservers 208.67.222.222 208.67.220.220
 
 
+acl sslbypass dst 203.117.155.98	       #GCA
 acl sslbypass dst 203.117.155.141       #shop.pb.garena
 acl sslbypass dst 203.117.155.142
 acl sslbypass dst 184.75.174.15         #Clash Of Clans
