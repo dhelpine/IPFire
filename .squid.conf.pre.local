@@ -1,21 +1,25 @@
 http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
+#https_port 192.168.21.212:3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
-#acl rol url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
-acl rol url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
-acl rol url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
-acl rol url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
- 
-range_offset_limit -1 rol
- 
-request_header_access Range deny !rol
-reply_header_access Accept-Range deny !rol
-reply_header_access Content-Range deny !rol
-reply_header_access Range deny !rol
+#acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
+#acl allowrangeurl url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
+
+#range_offset_limit none allowrangeurl
+
+#request_header_access Range deny !allowrangeurl
+#reply_header_access Accept-Range deny !allowrangeurl
+#reply_header_access Content-Range deny !allowrangeurl
+#reply_header_access Range deny !allowrangeurl
+
+#acl ythtml5 url_regex -i ^http.*videoplayback.*cver\=html5.*
+#http_access deny ythtml5
 
 acl ytHack url_regex -i \/pagead\/js\/lidar\.js
 acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
-deny_info http://pastebin.com/raw.php?i=ZKczrn1C ytHack
+deny_info http://pastebin.com/raw.php?i=CzuzS8Kt ytHack
 http_access deny ytHack
 
 acl crome url_regex -i ^http:\/\/.*\.pack.google.com\/edgedl\/chrome\/win\/.*
@@ -27,6 +31,7 @@ strip_query_terms off
 
 cache_swap_high 99
 cache_swap_low 98
+
 fqdncache_size 2048
 ipcache_size 1024
 ipcache_high 95
@@ -36,11 +41,10 @@ qos_flows local-hit=0x30
 
 dns_nameservers 208.67.222.222 208.67.220.220
 
-
-acl sslbypass dst 203.117.155.98	       #GCA
-acl sslbypass dst 203.117.155.141       #shop.pb.garena
-acl sslbypass dst 203.117.155.142
-acl sslbypass dst 184.75.174.15         #Clash Of Clans
+acl sslbypass dst 203.117.172.0/24	#GCA
+acl sslbypass dst 103.248.57.25		#shop.pb.garena
+acl sslbypass dst 103.248.57.26
+acl sslbypass dst 184.75.174.15		#Clash Of Clans
 acl sslbypass dst 184.75.174.28
 acl sslbypass dst 184.75.174.55
 acl sslbypass dst 184.75.174.61
@@ -54,19 +58,19 @@ acl sslbypass dst 184.75.174.181
 acl sslbypass dst 184.75.174.185
 acl sslbypass dst 184.75.174.187
 acl sslbypass dst 184.75.174.189
-acl sslbypass dst 94.236.124.241        #nfsw
-acl sslbypass dst 209.20.88.220         #ctizenfourfilm.com
-acl sslbypass dst 68.171.224.0/19       #BBM Android
+acl sslbypass dst 94.236.124.241	#nfsw
+acl sslbypass dst 209.20.88.220		#ctizenfourfilm.com
+acl sslbypass dst 68.171.224.0/19	#BBM Android
 acl sslbypass dst 74.82.64.0/19
 acl sslbypass dst 206.53.144.0/20
-acl sslbypass dst 118.98.96.151         #www.pk.narvalous.com/pk.narvalous.com/pk.xgameportal.com
+acl sslbypass dst 118.98.96.151		#www.pk.narvalous.com/pk.narvalous.com/pk.xgameportal.com
 acl sslbypass dst 203.90.249.82
-acl sslbypass dst 114.57.44.11          #Mandiri
+acl sslbypass dst 114.57.44.11		#Mandiri
 acl sslbypass dst 112.215.62.232
 acl sslbypass dst 114.57.160.206
-acl sslbypass dst 202.59.165.139        #ib.bri.co.id
-acl sslbypass dst 208.109.234.173       #mafiopoker.com
-acl sslbypass dst 74.125.68.17          #www.gmail.com/mail.google.com/inbox.google.com
+acl sslbypass dst 202.59.165.139	#ib.bri.co.id
+acl sslbypass dst 208.109.234.173	#mafiopoker.com
+acl sslbypass dst 74.125.68.17		#www.gmail.com/mail.google.com/inbox.google.com
 acl sslbypass dst 74.125.130.19
 acl sslbypass dst 74.125.130.138
 acl sslbypass dst 74.125.226.54
@@ -80,12 +84,29 @@ sslproxy_flags DONT_VERIFY_PEER
 sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
 sslcrtd_children 50 startup=50
 
-acl helper url_regex -i ^https?\:\/\/.*garena.*(installer|patcher).*\?1$
+acl yutub url_regex -i .*youtube\.com\/.*$
+acl yutub url_regex -i .*youtu\.be\/.*$
+
+logformat squid1 %{Referer}>h %ru
+access_log /var/log/squid/yt.log squid1 yutub
+
+acl redirec urlpath_regex -i .*&redirect_counter=1&cms_redirect=yes
+acl redirec urlpath_regex -i .*&ir=1&rr=12
+
+cache deny redirec 
+
+acl reddeny url_regex -i c\.youtube\.com\/videoplayback.*redirect_counter=1.*$
+acl reddeny url_regex -i c\.youtube\.com\/videoplayback.*cms_redirect=yes.*$
+
+acl helper url_regex -i ^https?\:\/\/.*videoplayback.*
+acl helper url_regex -i ^https?\:\/\/.*youtube.*api.*stats.*ads.*
+acl helper url_regex -i ^https?\:\/\/.*youtube.*(ptracking|set_awesome|stream_204|watchtime|qoe|atr|player_204).*
+
 acl patchini url_regex -i ^https?\:\/\/.*\.ini$
 acl semuaurl url_regex -i ^https?\:\/\/.*
 acl http302 http_status 302
-acl mimetext rep_mime_type mime-type text/html
-acl mimehtml rep_mime_type mime-type text/plain
+acl mimetext rep_mime_type -i mime-type ^text$
+acl mimehtml rep_mime_type -i mime-type ^text/html
 acl getmethod method GET
 
 cache deny localhost
@@ -94,12 +115,12 @@ store_id_program /etc/squid/storeid.pl
 store_id_children 50 startup=50
 store_id_access deny !getmethod
 store_id_access allow semuaurl
+store_id_access deny reddeny
 store_id_access deny all
 
-store_miss deny rol http302
-send_hit deny rol http302
 store_miss deny helper http302
 send_hit deny helper http302
+
 store_miss deny patchini
 send_hit deny patchini
 store_miss deny semuaurl http302
@@ -111,4 +132,4 @@ send_hit deny semuaurl mimehtml
 
 refresh_pattern -i ^https?\:\/\/pc-mikrotik\/youtube\/.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
 refresh_pattern . 0 95% 432000 override-expire override-lastmod refresh-ims reload-into-ims ignore-no-store ignore-private ignore-auth ignore-must-revalidate
-max_stale 30 days
+max_stale 360 days
