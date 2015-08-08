@@ -1,6 +1,5 @@
 http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
-#https_port 192.168.21.212:3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
 #acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
 #acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
@@ -13,9 +12,6 @@ https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dyn
 #reply_header_access Accept-Range deny !allowrangeurl
 #reply_header_access Content-Range deny !allowrangeurl
 #reply_header_access Range deny !allowrangeurl
-
-#acl ythtml5 url_regex -i ^http.*videoplayback.*cver\=html5.*
-#http_access deny ythtml5
 
 acl ytHack url_regex -i \/pagead\/js\/lidar\.js
 acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
@@ -86,21 +82,8 @@ sslcrtd_children 50 startup=50
 
 acl yutub url_regex -i .*youtube\.com\/.*$
 acl yutub url_regex -i .*youtu\.be\/.*$
-
 logformat squid1 %{Referer}>h %ru
 access_log /var/log/squid/yt.log squid1 yutub
-
-acl redirec urlpath_regex -i .*&redirect_counter=1&cms_redirect=yes
-acl redirec urlpath_regex -i .*&ir=1&rr=12
-
-cache deny redirec 
-
-acl reddeny url_regex -i c\.youtube\.com\/videoplayback.*redirect_counter=1.*$
-acl reddeny url_regex -i c\.youtube\.com\/videoplayback.*cms_redirect=yes.*$
-
-acl helper url_regex -i ^https?\:\/\/.*videoplayback.*
-acl helper url_regex -i ^https?\:\/\/.*youtube.*api.*stats.*ads.*
-acl helper url_regex -i ^https?\:\/\/.*youtube.*(ptracking|set_awesome|stream_204|watchtime|qoe|atr|player_204).*
 
 acl patchini url_regex -i ^https?\:\/\/.*\.ini$
 acl semuaurl url_regex -i ^https?\:\/\/.*
@@ -115,11 +98,7 @@ store_id_program /etc/squid/storeid.pl
 store_id_children 50 startup=50
 store_id_access deny !getmethod
 store_id_access allow semuaurl
-store_id_access deny reddeny
 store_id_access deny all
-
-store_miss deny helper http302
-send_hit deny helper http302
 
 store_miss deny patchini
 send_hit deny patchini
@@ -132,4 +111,4 @@ send_hit deny semuaurl mimehtml
 
 refresh_pattern -i ^https?\:\/\/pc-mikrotik\/youtube\/.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
 refresh_pattern . 0 95% 432000 override-expire override-lastmod refresh-ims reload-into-ims ignore-no-store ignore-private ignore-auth ignore-must-revalidate
-max_stale 360 days
+max_stale 60 days
