@@ -1,21 +1,30 @@
 http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
+#https_port 192.168.21.212:3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
-#acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
-#acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
-#acl allowrangeurl url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
-#acl allowrangeurl url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
 
-#range_offset_limit none allowrangeurl
+acl allowrangeurl url_regex -i ^https?\:\/\/garena\.edge\.cdn\.starhub\.com\/.*
+acl allowrangeurl url_regex -i ^https?\:\/\/file\.atlantica\.gemscool\.com\/UnitPatch\/NPatch\/.*
+acl allowrangeurl url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
+acl allowrangeurl url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
 
-#request_header_access Range deny !allowrangeurl
-#reply_header_access Accept-Range deny !allowrangeurl
-#reply_header_access Content-Range deny !allowrangeurl
-#reply_header_access Range deny !allowrangeurl
+range_offset_limit none allowrangeurl
+
+request_header_access Range deny !allowrangeurl
+reply_header_access Accept-Range deny !allowrangeurl
+reply_header_access Content-Range deny !allowrangeurl
+reply_header_access Range deny !allowrangeurl
+
+acl itagyoutube url_regex -i ^http.*videoplayback.*cver\=html5.*
+acl itagyoutube url_regex -i ^http.*videoplayback.*itag\=(160|134|135|136|137|138|264|266|298|299).*mime\=video.*
+acl itagyoutube url_regex -i ^http.*videoplayback.*mime\=video.*itag\=(160|134|135|136|137|138|264|266|298|299).*
+acl itagyoutube url_regex -i ^http.*videoplayback.*itag\=(167|168|169|170|218|219|243|244|245|246|247|248|271|272|278|302|303|308|313|315).*mime\=video.*
+acl itagyoutube url_regex -i ^http.*videoplayback.*mime\=video.*itag\=(167|168|169|170|218|219|243|244|245|246|247|248|271|272|278|302|303|308|313|315).*
+http_access deny itagyoutube
 
 acl ytHack url_regex -i \/pagead\/js\/lidar\.js
 acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
-deny_info http://pastebin.com/raw.php?i=CzuzS8Kt ytHack
+deny_info http://pastebin.com/raw.php?i=NBptAD3B ytHack
 http_access deny ytHack
 
 acl crome url_regex -i ^http:\/\/.*\.pack.google.com\/edgedl\/chrome\/win\/.*
@@ -37,9 +46,9 @@ qos_flows local-hit=0x30
 
 dns_nameservers 208.67.222.222 208.67.220.220
 
-acl sslbypass dst 203.117.172.0/24	#GCA
-acl sslbypass dst 103.248.57.25		#shop.pb.garena
-acl sslbypass dst 103.248.57.26
+
+acl sslbypass dst 203.117.155.141	#shop.pb.garena
+acl sslbypass dst 203.117.155.142
 acl sslbypass dst 184.75.174.15		#Clash Of Clans
 acl sslbypass dst 184.75.174.28
 acl sslbypass dst 184.75.174.55
@@ -80,16 +89,11 @@ sslproxy_flags DONT_VERIFY_PEER
 sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
 sslcrtd_children 50 startup=50
 
-acl yutub url_regex -i .*youtube\.com\/.*$
-acl yutub url_regex -i .*youtu\.be\/.*$
-logformat squid1 %{Referer}>h %ru
-access_log /var/log/squid/yt.log squid1 yutub
-
 acl patchini url_regex -i ^https?\:\/\/.*\.ini$
 acl semuaurl url_regex -i ^https?\:\/\/.*
 acl http302 http_status 302
-acl mimetext rep_mime_type -i mime-type ^text$
-acl mimehtml rep_mime_type -i mime-type ^text/html
+acl mimetext rep_mime_type mime-type ^text$
+acl mimehtml rep_mime_type mime-type ^text/html
 acl getmethod method GET
 
 cache deny localhost
