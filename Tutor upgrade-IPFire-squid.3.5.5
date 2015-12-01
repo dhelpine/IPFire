@@ -14,92 +14,75 @@ refresh_all_ims on
 maximum_object_size_in_memory 0 KB
 
 strip_query_terms off
-cache_swap_high 95
-cache_swap_low 90
+cache_swap_high 98
+cache_swap_low 95
 qos_flows local-hit=0x30
-dns_nameservers 208.67.222.222 208.67.220.220
+qos_flows sibling-hit=0x30
+qos_flows parent-hit=0x30
+dns_nameservers 208.67.222.222 208.67.220.220 8.8.8.8 8.8.4.4
 
 ### semua acl
-acl mimetipe rep_mime_type mime-type text/html
-acl mimetipe rep_mime_type mime-type text/plain
-acl ytHack url_regex -i \/pagead\/js\/lidar\.js
-acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
-acl urltohttp url_regex -i ^http.*(youtube|google).*
-acl windowsbrowser browser -i regexp .*Windows.*
-acl ythtml5 url_regex -i ^http.*videoplayback.*cver\=html5.*
-acl helper url_regex -i ^https?\:\/\/.*videoplayback.*
-acl helper url_regex -i ^https?\:\/\/.*youtube.*api.*stats.*ads.*
-acl helper url_regex -i ^https?\:\/\/.*youtube.*(ptracking|set_awesome|stream_204|watchtime|qoe|atr|player_204).*
-acl helper url_regex -i ^https?\:\/\/.*utm.gif.*
-acl helper url_regex -i ^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*
-acl helper url_regex -i ^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*
-acl helper url_regex -i ^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*
-acl helper url_regex -i ^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)
-acl helper url_regex -i ^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3
-acl helper url_regex -i ^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*
-acl helper url_regex -i ^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)
-acl helper url_regex -i ^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)
-acl helper url_regex -i ^https?\:\/\/.*garena.*(installer|patcher).*\?1$
+acl video url_regex -i ^http.*video.*
+acl range url_regex -i ^http.*range.*
+acl google url_regex -i (googlevideo.com|www.youtube.com)
+acl iphone browser -i regexp (iPhone|iPad)
+acl BB browser -i regexp (BlackBerry|PlayBook)
+acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
+acl Android browser -i regexp Android
+acl rolnone url_regex -i ^https?\:\/\/.*\/th\/patch\/.*
+acl rolnone url_regex -i ^http.*garena.*
+acl allurl url_regex -i ^http.*
 acl spliceserver ssl::server_name "/etc/squid/splicesaja.txt"
-acl rolpartial url_regex -i ^https?\:\/\/.*\/th\/patch\/.*
+acl ipbypass dst "/etc/squid/ipbypass.txt"
+acl httptomiss http_status 302
+acl httptomiss http_status 301
+acl mimetomiss rep_mime_type -i mime-type ^text/html
 acl step1 at_step SslBump1
 acl step2 at_step SslBump2
 acl step3 at_step SslBump3
-acl http302 http_status 302
 acl getmethod method GET
 
-http_access deny ythtml5
+quick_abort_min 0 KB
+quick_abort_max 0 KB
+quick_abort_pct 100
+range_offset_limit none rolnone
+range_offset_limit 1 KB !rolnone
 
-request_header_access User-Agent deny urltohttp windowsbrowser
+request_header_access User-Agent deny google !iphone !BB !Winphone !Android
 request_header_replace User-Agent Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
 
-request_header_access Range deny !rolpartial
-reply_header_access Range deny !rolpartial
-range_offset_limit -1 rolpartial
-
-#http_access deny itagyoutube
-
-#240p
-#deny_info http://pastebin.com/raw.php?i=rXxjschX ytHack
-#144p
-deny_info http://pastebin.com/raw.php?i=X4hyBt1f ytHack
-http_access deny ytHack
+http_access deny video !range
 
 always_direct allow all
-ssl_bump splice step1 spliceserver
+ssl_bump splice localhost
+ssl_bump splice ipbypass
+ssl_bump splice spliceserver
 ssl_bump peek step1 all
-ssl_bump splice step2 spliceserver
 ssl_bump bump step2 all
-ssl_bump splice step3 spliceserver
+ssl_bump splice step3 all
 sslproxy_cert_error allow all
 sslproxy_flags DONT_VERIFY_PEER
 
-sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
-sslcrtd_children 2000 startup=100
+sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 4MB
+sslcrtd_children 2000
 
 cache deny localhost
 
 store_id_program /etc/squid/storeid.pl
-store_id_children 2000 startup=100
+store_id_children 2000
 store_id_access deny !getmethod
-store_id_access allow helper
+store_id_access allow allurl
 store_id_access deny all
 
-store_miss deny helper http302
-send_hit deny helper http302
-store_miss deny urltohttp http302
-send_hit deny urltohttp http302
-store_miss deny rolpartial http302
-send_hit deny rolpartial http302
-#store_miss deny ytHack http302
-#send_hit deny ytHack http302
-store_miss deny mimetipe
-send_hit deny mimetipe
+store_miss deny httptomiss
+send_hit deny httptomiss
+store_miss deny mimetomiss
+send_hit deny mimetomiss
 
-refresh_pattern -i ^https?\:\/pc-mikrotik.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
-refresh_pattern -i ^https?\:\/\/.* 0 100% 432000 override-expire override-lastmod ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+refresh_pattern -i ^http.*pc-mikrotik.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
+refresh_pattern . 0 100% 432000 override-expire override-lastmod ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
 
-max_stale 360 days
+max_stale 60 days
 ===================================================================================
 
 7. http://pastebin.com/raw.php?i=0Mhu9JAD ---> storeid.pl
@@ -227,16 +210,13 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     $out="OK store-id=http://pc-mikrotik/4shared/download/" . $1;
 
 #steampowered dota 2
-} elsif ($x=~ m/^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)/) {
-    $out="OK store-id=http://media/steampowered/" . $1;
+} elsif ($x=~ m/^https?\:\/\/(media|valve).*steampowered.*\/(client|depot)\/(.*)/) {
+    $out="OK store-id=http://" . $1 . "/steampowered/" . $2 . "/" . $3;
 
-#steampowered dota2 chunk-manifest
-} elsif ($x=~ m/^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)/) {
-    $out="OK store-id=http://ipfire-squid/steampowered/depot/" . $1;
+#all url https store as http
+} elsif ($x=~ m/^https\:\/\/(.*)/) {
+    $out="OK store-id=http://" . $1;
 
-#garena installer/patcher
-} elsif ($x=~ m/^https?\:\/\/(.*garena.*(installer|patcher).*)\?.*/) {
-    $out="OK store-id=http://ipfire-squid/" . $1;
 
 } else {
 $out="ERR";
