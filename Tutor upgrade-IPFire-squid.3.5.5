@@ -9,6 +9,38 @@ IPFIRE upgrade squid 3.5.5
 http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
 
+acl urltohttp url_regex -i ^http.*(youtube|googlevideo|all-nettools).*
+acl iphone browser -i regexp (iPhone|iPad)
+acl BB browser -i regexp (BlackBerry|PlayBook)
+acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
+acl Android browser -i regexp Android
+request_header_access User-Agent deny urltohttp !iphone !BB !Winphone !Android
+request_header_replace User-Agent Mozilla/5.0 (Windows; U; Windows NT 6.1; rv:21.0; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27 Chrome/27.0.1453.94 Gecko/20100101 Firefox/21.0 Googlebot/2.1 (+http://www.googlebot.com/bot.html)
+
+acl rolpartial url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
+acl rolpartial url_regex -i ^https?\:\/\/update\.netmarble\.co\.id\/Elsword\/Patch/.*
+acl rolpartial url_regex -i ^https?\:\/\/.*\/eos\/.*
+acl rolpartial url_regex -i ^http.*garena.*patcher.*\?.*
+
+#acl rolpartial url_regex -i ^http.*garena.*
+#request_header_access Range deny !rolpartial
+
+reply_header_access Range deny !rolpartial
+range_offset_limit none rolpartial
+range_offset_limit 1 KB !rolpartial
+
+acl ytHack url_regex -i \/pagead\/js\/lidar\.js
+acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
+#deny_info http://pastebin.com/raw.php?i=NBptAD3B ytHack	#144p
+deny_info http://pastebin.com/raw.php?i=K3xJKL33 ytHack		#240p
+#deny_info http://pastebin.com/raw.php?i=CzuzS8Kt ytHack	#360p
+http_access deny ytHack
+
+acl chrome url_regex -i ^http:\/\/.*\.pack.google.com\/edgedl\/chrome\/win\/.*
+acl chrome url_regex -i ^http:\/\/cache.pack.google.com\/edgedl\/.*
+acl chrome url_regex -i ^http:\/\/www.google.com\/dl\/chrome\/win\/.*
+http_access deny chrome
+
 reload_into_ims on
 refresh_all_ims on
 maximum_object_size_in_memory 0 KB
@@ -16,71 +48,73 @@ maximum_object_size_in_memory 0 KB
 strip_query_terms off
 cache_swap_high 98
 cache_swap_low 95
-qos_flows local-hit=0x30
-qos_flows sibling-hit=0x30
-qos_flows parent-hit=0x30
-dns_nameservers 208.67.222.222 208.67.220.220 8.8.8.8 8.8.4.4
 
-### semua acl
-acl video url_regex -i ^http.*video.*
-acl range url_regex -i ^http.*range.*
-acl google url_regex -i (googlevideo.com|www.youtube.com)
-acl iphone browser -i regexp (iPhone|iPad)
-acl BB browser -i regexp (BlackBerry|PlayBook)
-acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
-acl Android browser -i regexp Android
-acl rolnone url_regex -i ^https?\:\/\/.*\/th\/patch\/.*
-acl rolnone url_regex -i ^http.*garena.*
-acl allurl url_regex -i ^http.*
+fqdncache_size 2048
+ipcache_size 1024
+ipcache_high 95
+ipcache_low 90
+
+qos_flows local-hit=0x30
+
+dns_nameservers 208.67.222.222 208.67.220.220
+
 acl spliceserver ssl::server_name "/etc/squid/splicesaja.txt"
-acl ipbypass dst "/etc/squid/ipbypass.txt"
-acl httptomiss http_status 302
-acl httptomiss http_status 301
-acl mimetomiss rep_mime_type -i mime-type ^text/html
+
 acl step1 at_step SslBump1
 acl step2 at_step SslBump2
 acl step3 at_step SslBump3
-acl getmethod method GET
 
 quick_abort_min 0 KB
 quick_abort_max 0 KB
 quick_abort_pct 100
-range_offset_limit none rolnone
-range_offset_limit 1 KB !rolnone
-
-request_header_access User-Agent deny google !iphone !BB !Winphone !Android
-request_header_replace User-Agent Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
-
-http_access deny video !range
 
 always_direct allow all
-ssl_bump splice localhost
-ssl_bump splice ipbypass
-ssl_bump splice spliceserver
+ssl_bump splice step1 spliceserver
 ssl_bump peek step1 all
+ssl_bump splice step2 spliceserver
 ssl_bump bump step2 all
-ssl_bump splice step3 all
+ssl_bump splice step3 spliceserver
 sslproxy_cert_error allow all
 sslproxy_flags DONT_VERIFY_PEER
+sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
+sslcrtd_children 100 startup=100
 
-sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 4MB
-sslcrtd_children 2000
+acl helper url_regex -i ^https?\:\/\/.*
+acl sendstore http_status 302
+acl mimetype rep_mime_type mime-type ^text$
+acl mimetype rep_mime_type mime-type ^text/plain
+acl mimetype rep_mime_type mime-type ^text/html
+acl mimetype rep_mime_type mime-type ^text/xml
+acl getmethod method GET
 
 cache deny localhost
 
 store_id_program /etc/squid/storeid.pl
-store_id_children 2000
+store_id_children 100 startup=100
 store_id_access deny !getmethod
-store_id_access allow allurl
+store_id_access allow helper
 store_id_access deny all
 
-store_miss deny httptomiss
-send_hit deny httptomiss
-store_miss deny mimetomiss
-send_hit deny mimetomiss
+store_miss deny helper sendstore
+send_hit deny helper sendstore
+store_miss deny helper mimetype
+send_hit deny helper mimetype
 
-refresh_pattern -i ^http.*pc-mikrotik.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
-refresh_pattern . 0 100% 432000 override-expire override-lastmod ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+refresh_pattern -i ^http.*pc-mikrotik.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
+refresh_pattern -i ^https?\:\/pc-mikrotik\/youtube\/.* 432000 100% 518400 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
+#refresh_pattern -i ^https?\:\/\/.* 0 95% 432000 override-expire override-lastmod ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+refresh_pattern . 0 95% 432000 override-expire override-lastmod refresh-ims reload-into-ims ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+
+#include /etc/squid/refresh.conf
+
+refresh_pattern .*(begin|start)\=[1-9][0-9].*               0 0% 0
+refresh_pattern -i (cgi-bin|mrtg|graph) 0 0% 0
+#refresh_pattern ^http.*(youtube|googlevideo)\.*     2629742 99% 2629742 ignore-reload override-expire override-lastmod ignore-must-revalidate  ignore-private ignore-no-store ignore-auth store-stale
+refresh_pattern ^http.*(youtube|googlevideo)\.*     5259487 99% 5259487 ignore-reload override-expire override-lastmod ignore-must-revalidate  ignore-private ignore-no-store ignore-auth store-stale
+#refresh_pattern (get_video\?|videoplayback\?|videodownload\?) 5259487 99% 5259487 override-expire ignore-reload ignore-private
+
+refresh_pattern -i \.(3gp|ac4|agx|au|avi|axd|bmp|cbr|cbt|cbz|dat|divx|flv|gif|hqx|ico|jp(2|e|eg|g)|mid|mk(a|v)|mov|mp(1|2|3|4|e|eg|g)|og(a|g|v)|qt|ra|ram|rm|swf|tif|tiff|wa(v|x)|wm(a|v|x)|x-flv)$ 26297 100% 43200 override-expire override-lastmod ignore-private reload-into-ims ignore-must-revalidate ignore-reload store-stale
+refresh_pattern -i \.(3gp|avi|ac4|mp(e?g|a|e|1|2|3|4)|m4(a|v)|3g(p?2|p)|mk(a|v)|og(x|v|a|g|m)|wm(a|v)|wmx|wpl|rm|snd|vob|wav|asx|avi|qt|divx|flv|f4v|x-flv|dvr-ms|m(1|2)(v|p)|mov|mid|mpeg)$ 432000 100% 432000 ignore-no-store ignore-must-revalidate ignore-private override-expire override-lastmod reload-into-ims store-stale
 
 max_stale 60 days
 ===================================================================================
@@ -112,7 +146,7 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     print FILE "id=@content_v";
     close FILE;
     }
-    $out="ERR";
+    $out=$x;
 
 #tracking youtube
 } elsif ($x=~ m/^https?\:\/\/.*youtube.*(ptracking|set_awesome).*/){
@@ -123,7 +157,7 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     print FILE "id=@video_id";
     close FILE;
     }
-    $out="ERR";
+    $out=$x;
  
  
 #stream_204 youtube
@@ -135,7 +169,7 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     print FILE "id=@docid";
     close FILE;
     }
-    $out="ERR";
+    $out=$x;
  
 #player_204 youtube
 } elsif ($x=~ m/^https?\:\/\/.*youtube.*player_204.*/){
@@ -146,14 +180,14 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     print FILE "id=@v";
     close FILE;
     }
-    $out="ERR";
+    $out=$x;
 
 #youtube
 } elsif ($x=~ m/^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*title.*/){
     @title      = m/[%&?\/](title[%&=\/][^\&\s\/]*)/;
     @itag      = m/[%&?\/](itag[%&=\/][^\&\s\/]*)/;
     @range   = m/[%&?\/](range[%&=\/][^\&\s\/]*)/;
-    $out="OK store-id=http://pc-mikrotik/youtube/@itag@title@range";
+    $out="http://pc-mikrotik/youtube/@itag@title@range";
  
 #youtube
 } elsif ($x=~ m/^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*/){
@@ -169,63 +203,98 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
         @id = <FILE>;
         close FILE;}
     }
-    $out="OK store-id=http://pc-mikrotik/youtube/@id@itag@mime@range@slices";
+    $out="http://pc-mikrotik/youtube/@id@itag@mime@range@slices";
 
+#YouTube
+#if ($X[1] =~ /(youtube|google).*videoplayback\?/){
+#        @itag = m/[&?](itag=[0-9]*)/;
+#        @id = m/[&?](id=[^\&]*)/;
+#        @range = m/[&?](range=[^\&\s]*)/;
+#    }
+#    $out="http://pc-mikrotik/youtube/@id&@itag@range\n";
 
 
 #utmgif
 } elsif ($x=~ m/^https?\:\/\/.*utm.gif.*/) {
-    $out="OK store-id=http://pc-mikrotik/__utm.gif";
+    $out="http://pc-mikrotik/__utm.gif";
+
+
+#safe_image FB
+} elsif ($x=~ m/^https?\:\/\/fbexternal-a\.akamaihd\.net\/safe_image\.php\?d.*/) {
+    @d = m/[&?]d\=([^\&\s]*)/;
+    @h = m/[&?]h\=([^\&\s]*)/;
+    @w = m/[&?]w\=([^\&\s]*)/;
+    $out="http://pc-mikrotik/safe_image/d=@d&w=@w&h=@h";
+
+
+#fbcdn size picture
+} elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*x.*\/.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
+    $out="http://pc-mikrotik/fbcdn/" . $2;
+
+
+#fbcdn picture
+} elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
+    $out="http://pc-mikrotik/fbcdn/" . $2;
 
 #reverbnation
 } elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
-    $out="OK store-id=http://pc-mikrotik/reverbnation/" . $1;
+    $out="http://pc-mikrotik/reverbnation/" . $1;
  
 #playstore
 } elsif ($x=~ m/^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*/) {
-    $out="OK store-id=http://pc-mikrotik/android/market/" . $1;
+    $out="http://pc-mikrotik/android/market/" . $1;
 
 
 #filehost
 } elsif ($x=~ m/^https?\:\/\/.*datafilehost.*\/get\.php.*file\=(.*)/) {
-    $out="OK store-id=http://pc-mikrotik/datafilehost/" . $1;
+    $out="http://pc-mikrotik/filehost/" . $1;
 
 
 #speedtest
 } elsif ($x=~ m/^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*/) {
-    $out="OK store-id=http://pc-mikrotik/speedtest/" . $2;
+    $out="http://pc-mikrotik/speedtest/" . $2;
 
 
 #filehippo
 } elsif ($x=~ m/^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)/) {
-    $out="OK store-id=http://pc-mikrotik/filehippo/" . $1;
+    $out="http://pc-mikrotik/filehippo/" . $1;
 
 
 #4shared preview.mp3
 } elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3/) {
-    $out="OK store-id=http://pc-mikrotik/4shared/preview/" . $1;
+    $out="http://pc-mikrotik/4shared/preview/" . $1;
 
 #4shared
 } elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*/) {
-    $out="OK store-id=http://pc-mikrotik/4shared/download/" . $1;
+    $out="http://pc-mikrotik/4shared/download/" . $1;
 
 #steampowered dota 2
-} elsif ($x=~ m/^https?\:\/\/(media|valve).*steampowered.*\/(client|depot)\/(.*)/) {
-    $out="OK store-id=http://" . $1 . "/steampowered/" . $2 . "/" . $3;
+} elsif ($x=~ m/^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)/) {
+    $out="http://pc-mikrotik/media/steampowered/" . $1;
 
-#all url https store as http
-} elsif ($x=~ m/^https\:\/\/(.*)/) {
-    $out="OK store-id=http://" . $1;
+#steampowered dota2 chunk-manifest
+} elsif ($x=~ m/^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)/) {
+    $out="http://pc-mikrotik/steampowered/depot/" . $1;
 
+#animeindo
+} elsif ($x =~ m/^http:\/\/.*aisfile\.com:182\/.\/(.*)\/(.*\.(mp4|flv)).*/){
+    $out="http://pc-mikrotik/aisfile:182/" . $2;
+
+#update-mozilla
+} elsif ($x =~ m/^http?\:\/\/safebrowsing-cache\.google\.com\/safebrowsing\/rd\/.*/){
+    $out="http://pc-mikrotik/safebrowsing/" . $2;
+
+} elsif ($x =~ m/^https?\:\/\/.*\.mozilla\.net\/.*\.mar/) {
+    $out="http://pc-mikrotik/mar/" . $2;
 
 } else {
-$out="ERR";
+$out=$x;
 }
 
 if ($X[0] =~ m/^https?\:\/\/.*/) {
-	print "$out\n";
+	print "OK store-id=$out\n";
 } else {
-	print $X[0] . " " . "$out\n";
+	print $X[0] . " " . "OK store-id=$out\n";
 }
 }
 ===================================================================================
@@ -238,6 +307,18 @@ ib.bri.co.id
 110.92.28.161
 94.236.124.241
 94.236.46.101
+ib.bankmandiri.co.id
+117.102.111.38
+114.57.160.206
+112.215.62.232
+114.57.44.11
+112.215.62.232
+web.cdn.garenanow.com
+#54.192.48.0/24
+#54.230.48.0/24
+#54.230.148.0/24
+s65.kumpulbagi.com
+119.81.101.170
 ===================================================================================
 
 9. via GUI browser ---> ip-proxy:81 ---> save
