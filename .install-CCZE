@@ -1,0 +1,4 @@
+wget http://cachebox.googlecode.com/files/ipfire-ccze.tar.gz
+tar -zxvf ipfire-ccze.tar.gz
+cd ipfire-ccze
+./install
