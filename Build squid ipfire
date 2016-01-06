@@ -1,0 +1,23 @@
+build squid di ipfire via putty (asumsi telah di putty) =
+1. cd /var
+2. mkdir build
+3. cd build
+4. pakfire install git
+5. pakfire install make
+6. git clone git://git.ipfire.org/ipfire-2.x.git
+7. cd ipfire-2.x/
+8. git checkout tags/v2.17-core[core ipfire]
+[core ipfre] diganti dengan core ipfire terkakhir misal 92,
+sehingga menjadi git checkout tags/v2.17-core92
+9. vi lfs/squid
+untuk mengedit script konfigurasi dan instalasi squid,
+save dan exit vi bila sudah selesai,
+bisa juga pake editor via winscp
+10. ./make.sh downloadsrc
+11. ./make.sh build
+12. selesai, silahkan ambil file iso nya atau binarinya
+
+referensi :
+shifu Fajar Ramadhan
+http://wiki.ipfire.org/devel/ipfire-2.x/build-howto
+http://wiki.ipfire.org/devel/ipfire-2.x/addon-howto
