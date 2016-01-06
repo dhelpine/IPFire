@@ -111,6 +111,7 @@ case "$1" in
 		else
 			modprobe xt_TPROXY
 			modprobe xt_socket
+			modprobe nf_tproxy_core
 			modprobe xt_mark
 			modprobe nf_nat
 			modprobe nf_conntrack_ipv4
