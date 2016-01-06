@@ -82,6 +82,10 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     }
     $out="http://pc-mikrotik/youtube/@id@itag@mime@range@slices";
 
+#youtube cver
+} elsif ($x=~ m/^https?\:\/\/.*videoplayback.*/){
+    @cver     = m/[html5](cver[html5]*)/;
+    $out="http://pc-mikrotik/youtube/@cver";
 
 #utmgif
 } elsif ($x=~ m/^https?\:\/\/.*utm.gif.*/) {
@@ -95,37 +99,14 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
     @w = m/[&?]w\=([^\&\s]*)/;
     $out="http://pc-mikrotik/safe_image/d=@d&w=@w&h=@h";
 
-#safe_image FB 1
-} elsif ($x=~ m/^https?\:\/\/fbexternal-a\.akamaihd\.net\/safe_image\.php\?d.*/) {
-    $out="http://helpr/safe_image/d=@d&w=@w&h=@h";
-
-#safe_image FB 2
-} elsif ($x=~ m/^https?\:\/\/fbstatic-a\.akamaihd\.net\/safe_image\.php\?d.*/) {
-    $out="http://helpr/safe_image/d=@d&w=@w&h=@h";
-
 #fbcdn size picture
 } elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*x.*\/.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
     $out="http://pc-mikrotik/fbcdn/" . $2;
 
+
 #fbcdn picture
 } elsif ($x=~ m/^https?\:\/\/.*(fbcdn).*\/v\/.*\/(.*\.(jpg|jpeg|bmp|ico|png|gif))\?oh=\.*/) {
     $out="http://pc-mikrotik/fbcdn/" . $2;
-
-#fbcdn profile 1
-} elsif ($x=~ m/^https?\:\/\/fbcdn-[profile|sphotos].*\.akamaihd\.net\/h[profile|photos].*\/t1.*\/([a-z]\d+x\d+)\/(.*\.jpg)/) {
-    $out="http://helpr/fbcdn/" . $2;
-
-#fbcdn profile 2
-} elsif ($x=~ m/^https?\:\/\/.*\/([a-z]\d+x\d+)\/(.*\.(bmp|ico|jpe?g|png)).*/) {
-    $out="http://helpr/fbcdn/" . $2;
-
-#‎safe_image‬ FB
-} elsif ($x=~ m/^https?\:\/\/.*(fbexternal|external).*\.fbcdn\.net\/safe_image\.php\?.*(url\=.*)/) {
-    $out="http://helpr/fbcdn/" . $2;
-
-‪#‎fbcdn‬-akamaihd-FB
-} elsif ($x=~ m/^https?\:\/\/.*(profile|sphotos|photos|scontent|dragon|video).*\.(akamaihd|fbcdn)\.net\/(hprofile|hphotos|hvideo).*\/(([a-z]\d+x\d+)|(.*))\/(.*\.(bmp|gif|ico|jpe?g|png|mp4|flv|avi|mkv|m4v|mov|wmv|3gp|mpe?g)).*/) {
-    $out="http://helpr/fbcdn/" . $4 / $7";
 
 #reverbnation
 } elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
@@ -161,54 +142,19 @@ if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
 
 #steampowered dota 2
 } elsif ($x=~ m/^https?\:\/\/media\d+\.steampowered\.com\/client\/(.*)/) {
-    $out="http://helpr/media/steampowered/" . $1;
+    $out="http://pc-mikrotik/media/steampowered/" . $1;
 
 #steampowered dota2 chunk-manifest
 } elsif ($x=~ m/^https?\:\/\/valve\d+\.cs\.steampowered\.com\/depot\/(.*)/) {
-    $out="http://helpr/steampowered/depot/" . $1;
+    $out="http://pc-mikrotik/steampowered/depot/" . $1;
 
 #animeindo
 } elsif ($x =~ m/^http:\/\/.*aisfile\.com:182\/.\/(.*)\/(.*\.(mp4|flv)).*/){
-    $out="http://helpr/aisfile:182/" . $2;
+    $out="http://pc-mikrotik/aisfile/$2\n";
 
-#android
-} elsif ($X =~ m/^http:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/([\w\d\-\.\%]*)\/([\d]*)\/.*/){
-    $out="http://helpr/android-apps/" . $1;
-
-#prn
-} elsif ($X =~ m/^http:\/\/.*\.xvideos\.com\/.*\/([\w\d\-\.\%]*\.(3gp|mpg|flv|mp4))\?.*/){
-    $out="http://helpr/xvideos/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+\/.*\/xh.*\/([\w\d\-\.\%]*\.flv)/){
-    $out="http://helpr/Xhamster/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)\?start=0/){
-    $out="http://helpr/Xhamster2/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\d]+\.[\d]+\.[\d]+\.[\d]+.*\/([\w\d\-\.\%]*\.flv)/){
-    $out="http://helpr/Xhamster3/" . $1;
-
-} elsif ($X =~ m/^http:\/\/.*\.youjizz\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp))\?.*/){
-    $out="http://helpr/YouJizz/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.keezmovies[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
-    $out="http://helpr/KeezMovies/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.tube8[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
-    $out="http://helpr/Tube8/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.youporn[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
-    $out="http://helpr/YouPorn/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.spankwire[\w\d\-\.\%]*\.com.*\/([\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
-    $out="http://helpr/SpankWire/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\.\%]*\.pornhub[\w\d\-\.\%]*\.com.*\/([[\w\d\-\.\%]*\.(mp4|flv|3gp|mpg|wmv))\?.*/){
-    $out="http://helpr/PornHub/" . $1;
-
-} elsif ($X =~ m/^http:\/\/[\w\d\-\_\.\%\/]*.*\/([\w\d\-\_\.]+\.(flv|mp3|mp4|3gp|wmv))\?.*cdn\_hash.*/){
-    $out="http://helpr/media/" . $1;
-
+#haynhucnhoi.tv
+} elsif ($x =~ m/^https?\:\/\/.*stream1.*\/clip\/(.*)\/(.*)(.*\.mp4).*/){
+    $out="http://pc-mikrotik/stream1/$2\n";
 
 } else {
 $out=$x;
