@@ -20,8 +20,8 @@ umask 022
 
 pid_filename /var/run/squid.pid
 
-cache_mem 8 MB
-error_directory /usr/lib/squid/errors/en
+cache_mem 249 MB
+error_directory /usr/lib/squid/errors/en-us
 
 digest_generation off
 
