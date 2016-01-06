@@ -1,0 +1,186 @@
+http_port 192.168.21.212:3128 tproxy
+https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=40MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
+
+#acl urltohttp url_regex -i ^http.*(youtube|google).*
+#acl phonebrowser browser -i regexp (Android|BlackBerry|iPhone|Phone|iPad|PlayBook|Mobile)
+#request_header_access User-Agent deny urltohttp !phonebrowser
+#request_header_replace User-Agent Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+
+#acl rolpartial url_regex -i ^https?\:\/\/patch\.gemscool\.com\/th\/patch\/.*
+#acl rolpartial url_regex -i ^https?\:\/\/.*\/eos\/.*
+#acl rolpartial url_regex -i ^http.*garena.*patcher.*\?.*
+
+#acl rolpartial url_regex -i ^http.*garena.*
+
+#request_header_access Range deny !rolpartial
+#reply_header_access Range deny !rolpartial
+#range_offset_limit none rolpartial
+#range_offset_limit 1 KB !rolpartial
+
+acl ytHack url_regex -i \/pagead\/js\/lidar\.js
+acl ytHack url_regex -i google\.com\/js\/bg\/.*\.js
+deny_info http://pastebin.com/raw.php?i=ZKczrn1C ytHack
+http_access deny ytHack
+
+acl crome url_regex -i ^http:\/\/.*\.pack.google.com\/edgedl\/chrome\/win\/.*
+acl crome url_regex -i ^http:\/\/cache.pack.google.com\/edgedl\/.*
+acl crome url_regex -i ^http:\/\/www.google.com\/dl\/chrome\/win\/.*
+http_access deny crome
+
+reload_into_ims on
+refresh_all_ims on
+maximum_object_size_in_memory 0 KB
+
+strip_query_terms off
+
+cache_swap_high 99
+cache_swap_low 98
+
+#fqdncache_size 2048
+ipcache_size 1024
+ipcache_high 95
+ipcache_low 90
+
+qos_flows local-hit=0x30
+
+dns_nameservers 208.67.222.222 208.67.220.220
+
+quick_abort_min 0 KB
+quick_abort_max 0 KB
+quick_abort_pct 100
+
+#pbgarena
+acl sslbypass dst 52.84.7.124
+acl sslbypass dst 52.84.7.74
+acl sslbypass dst 52.84.7.87
+acl sslbypass dst 52.84.7.39
+acl sslbypass dst 52.84.7.15
+acl sslbypass dst 52.84.7.40
+acl sslbypass dst 52.84.7.101
+acl sslbypass dst 52.84.7.105
+acl sslbypass dst 52.84.7.51
+acl sslbypass dst 52.84.7.246
+acl sslbypass dst 52.84.7.79
+acl sslbypass dst 52.84.7.132
+acl sslbypass dst 52.84.7.159
+acl sslbypass dst 54.192.151.130
+acl sslbypass dst 54.192.151.119
+acl sslbypass dst 54.192.151.15
+acl sslbypass dst 54.192.151.8
+
+#shop.pb.garena.co.id
+acl sslbypass dst 103.248.57.25
+acl sslbypass dst 103.248.57.26
+
+#Sbwas
+acl sslbypass dst 203.89.146.66
+acl sslbypass dst 203.89.146.67
+
+#edmodo
+acl sslbypass dst 54.213.187.92
+acl sslbypass dst 54.213.187.145
+acl sslbypass dst 54.213.209.240
+acl sslbypass dst 54.201.36.184
+acl sslbypass dst 54.213.182.57
+acl sslbypass dst 54.201.164.195
+acl sslbypass dst 54.213.21.16
+acl sslbypass dst 54.244.20.67
+
+#kickass.to
+acl sslbypass dst 68.71.58.34
+acl sslbypass dst 67.212.88.10
+acl sslbypass dst 67.212.88.146
+acl sslbypass dst 205.204.64.122 
+
+#downdetector
+acl sslbypass dst 104.28.20.76
+acl sslbypass dst 104.28.21.76
+
+#Learn.Quipperschool
+acl sslbypass dst 54.230.141.185
+acl sslbypass dst 54.192.141.215
+acl sslbypass dst 54.192.141.216
+acl sslbypass dst 54.192.141.218
+acl sslbypass dst 54.192.141.217
+acl sslbypass dst 54.230.142.56
+acl sslbypass dst 54.230.143.7
+acl sslbypass dst 54.230.159.58
+acl sslbypass dst 54.230.159.108
+acl sslbypass dst 205.251.215.123
+
+#indoplay
+acl sslbypass dst 211.210.115.46
+
+#nfs
+acl sslbypass dst 94.236.124.241
+
+#Mandiri
+acl sslbypass dst 114.57.44.11
+acl sslbypass dst 114.57.160.206
+acl sslbypass dst 112.215.62.232
+acl sslbypass dst 117.102.111.38
+
+#ctizenfourfilm.com
+acl sslbypass dst 209.20.88.220
+
+#BBM Android
+acl sslbypass dst 68.171.224.0/19
+acl sslbypass dst 74.82.64.0/19
+acl sslbypass dst 206.53.144.0/20
+#acl sslbypass dst 74.82.88.132
+#acl sslbypass dst 74.82.73.229
+
+#www.pk.narvalous.com/pk.narvalous.com/pk.xgameportal.com
+acl sslbypass dst 118.98.96.151
+acl sslbypass dst 203.90.249.82
+
+#ib.bri.co.id
+acl sslbypass dst 202.59.165.139
+
+#mafiopoker.com
+acl sslbypass dst 208.109.234.173
+
+#www.gmail.com/mail.google.com/inbox.google.com
+acl sslbypass dst 74.125.68.17
+acl sslbypass dst 74.125.130.19
+acl sslbypass dst 74.125.130.138
+
+always_direct allow all
+ssl_bump none localhost
+ssl_bump none sslbypass
+ssl_bump server-first all
+sslproxy_cert_error allow all
+sslproxy_flags DONT_VERIFY_PEER
+sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 40MB
+sslcrtd_children 50 startup=50
+
+acl patchini url_regex -i ^https?\:\/\/.*\.ini$
+acl semuaurl url_regex -i ^https?\:\/\/.*
+acl http302 http_status 302
+acl mimetext rep_mime_type mime-type ^text$
+acl mimehtml rep_mime_type mime-type ^text/html
+acl mimetype rep_mime_type mime-type ^text/plain
+acl getmethod method GET
+
+cache deny localhost
+
+store_id_program /etc/squid/storeid.pl
+store_id_children 50 startup=50
+store_id_access deny !getmethod
+store_id_access allow semuaurl
+store_id_access deny all
+
+store_miss deny patchini
+send_hit deny patchini
+store_miss deny semuaurl http302
+send_hit deny semuaurl http302
+store_miss deny semuaurl mimetext
+send_hit deny semuaurl mimetext
+store_miss deny semuaurl mimehtml
+send_hit deny semuaurl mimehtml
+store_miss deny semuaurl mimetype
+send_hit deny semuaurl mimetype
+
+refresh_pattern -i ^https?\:\/\/pc-mikrotik\/youtube\/.* 432000 100% 432000 override-expire override-lastmod ignore-reload ignore-no-store ignore-private ignore-auth ignore-must-revalidate store-stale
+refresh_pattern . 0 95% 432000 override-expire override-lastmod refresh-ims reload-into-ims ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+max_stale 360 days
