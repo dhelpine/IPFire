@@ -9,11 +9,12 @@ build squid di ipfire via putty (asumsi telah di putty) =
 8. git checkout tags/v2.17-core[core ipfire]
 [core ipfre] diganti dengan core ipfire terkakhir misal 92,
 sehingga menjadi git checkout tags/v2.17-core92
-9. vi lfs/squid
+9. nano lfs/squid
 untuk mengedit script konfigurasi dan instalasi squid,
 save dan exit vi bila sudah selesai,
 bisa juga pake editor via winscp
 10. ./make.sh downloadsrc
+    ./make.sh gettoolchain
 11. ./make.sh build
 12. selesai, silahkan ambil file iso nya atau binarinya
 
