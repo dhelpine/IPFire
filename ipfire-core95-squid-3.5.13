@@ -1,0 +1,390 @@
+https://drive.google.com/…/0B2qvsHTCBxISVUhiRkwyaHdKb…/view…
+https://drive.google.com/open… = /usr/lib/squid/ssl_crtd
+https://drive.google.com/open… = nf_tproxy_core.ko
+*** untuk yg tidak memakai nf_tproxy_core.ko agar tidak terjadi error message bisa pagerin script:
+‪#‎modprobe‬ nf_tproxy_core
+===== /etc/init.d/squid , start setelah baris ini =====
+#!/bin/sh
+# Begin $rc_base/init.d/squid
+. /etc/sysconfig/rc
+. $rc_functions
+chown -R squid:squid /var/log/squid
+chown -R squid:squid /var/log/squidGuard
+transparent() {
+DEVICE=$1
+eval $(/usr/local/bin/readhash /var/ipfire/ethernet/settings)
+eval $(/usr/local/bin/readhash /var/ipfire/proxy/settings)
+# If the proxy port is not set we set the default to 800.
+if [ -z "${TRANSPARENT_PORT}" ]; then
+TRANSPARENT_PORT=800
+fi
+LOCALIP=`cat /var/ipfire/red/local-ipaddress | tr -d \n`
+if [ -z $LOCALIP ]; then
+boot_mesg "Couldn't read local-ipaddress" ${FAILURE}
+exit 1
+fi
+COUNT=1
+FILE=/var/ipfire/vpn/config
+while read LINE; do
+let COUNT=$COUNT+1
+CONN_TYPE=`echo "$LINE" | awk -F, '{ print $5 }'`
+if [ "$CONN_TYPE" != "net" ]; then
+continue
+fi 
+iptables -t nat -A SQUID -i $1 -p tcp -d `echo "$LINE" | awk -F, '{ print $13 }'` --dport 80 -j RETURN
+done < $FILE
+if [ "$RED_TYPE" == "STATIC" ]; then
+iptables -t nat -A SQUID -i $1 -p tcp -d $RED_NETADDRESS/$RED_NETMASK --dport 80 -j RETURN
+fi
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 80 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 443 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 5050 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 8080 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 88 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 182 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 8777 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 8081 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp -d $LOCALIP --dport 1935 -j RETURN
+iptables -t nat -A SQUID -i $1 -p tcp --dport 80 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 443 -j REDIRECT --to-port 3129
+iptables -t nat -A SQUID -i $1 -p tcp --dport 5050 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 8080 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 88 -j REDIRECT --to-port 3129
+iptables -t nat -A SQUID -i $1 -p tcp --dport 182 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 8777 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 8081 -j REDIRECT --to-port "${TRANSPARENT_PORT}"
+iptables -t nat -A SQUID -i $1 -p tcp --dport 1935 -j REDIRECT --to-port 3129
+}
+case "$1" in
+start)
+getpids "squid"
+if [ -n "${pidlist}" ]; then
+echo -e "Squid is already running with Process"\
+"ID(s) ${pidlist}.${NORMAL}"
+evaluate_retval
+exit
+fi
+eval $(/usr/local/bin/readhash /var/ipfire/proxy/advanced/settings)
+eval $(/usr/local/bin/readhash /var/ipfire/ethernet/settings)
+if [ -e /var/ipfire/proxy/enable -o -e /var/ipfire/proxy/enable_blue ]; then
+# Add Address to errorpage stylesheet
+sed "s|XXXhostXXX|$GREEN_ADDRESS|g" /var/ipfire/proxy/errorpage-$ERR_DESIGN.css > \
+/etc/squid/errorpage.css
+boot_mesg "Creating Squid swap directories..."
+/usr/sbin/squid -z >/dev/null 2>&1
+evaluate_retval
+# Make sure, that the process above has finished.
+counter=5
+while [ ${counter} -gt 0 ]; do
+if pidofproc -s /usr/sbin/squid; then
+sleep 1
+else
+break
+fi
+done
+boot_mesg "Starting Squid Proxy Server..."
+loadproc /usr/sbin/squid
+fi
+‪#‎if‬ [ -e /var/ipfire/proxy/transparent ]; then
+# transparent $GREEN_DEV
+‪#‎fi‬
+#if [ -e /var/ipfire/proxy/transparent_blue ]; then
+# transparent $BLUE_DEV
+#fi
+if [ -e /var/ipfire/proxy/transparent ]; then
+transparent $GREEN_DEV
+elif [ -e /var/ipfire/proxy/transparent_blue ]; then
+transparent $BLUE_DEV
+else
+modprobe xt_TPROXY
+modprobe xt_socket
+#modprobe nf_tproxy_core
+modprobe xt_mark
+modprobe nf_nat
+modprobe nf_conntrack_ipv4
+modprobe nf_conntrack
+modprobe nf_defrag_ipv4
+modprobe ipt_REDIRECT
+iptables -t mangle -F
+iptables -t nat -F 
+iptables -t mangle -N DIVERT
+iptables -t mangle -A DIVERT -j MARK --set-mark 1
+iptables -t mangle -A DIVERT -j ACCEPT
+iptables -t mangle -A INPUT -j ACCEPT
+iptables -t mangle -A PREROUTING -p tcp -m socket -j DIVERT
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 80 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 5050 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 8080 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 88 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3129
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 182 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 8777 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 8081 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3127
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 1935 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3129
+iptables -t mangle -A PREROUTING ! -d 192.168.21.212/32 -p tcp --dport 443 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 3129
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 80 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 5050 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 8080 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 88 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 182 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 8777 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 8081 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 1935 -j ACCEPT
+iptables -t mangle -A PREROUTING -d 192.168.21.212/32 -p tcp --dport 443 -j ACCEPT
+ip rule add fwmark 1 lookup 100
+ip route add local 0.0.0.0/0 dev lo table 100
+sysctl net.ipv4.ip_nonlocal_bind=1
+sysctl net.ipv4.ip_forward=1
+fi
+;;
+stop)
+iptables -t nat -F SQUID
+if [ -e /var/run/squid.pid ]; then
+boot_mesg "Stopping Squid Proxy Server..."
+squid -k shutdown >/dev/null 2>&1
+evaluate_retval
+# Stop squidGuard, updxlrator, squidclamav
+# and redirect_wrappers. 
+killproc /usr/bin/squidGuard >/dev/null &
+killproc /usr/sbin/updxlrator >/dev/null &
+killproc /usr/bin/squidclamav >/dev/null &
+killproc /usr/sbin/redirect_wrapper >/dev/null &
+# Wait until all redirectors have been stopped.
+wait
+# If squid is still running, wait up to 30 seconds
+# before we go on to kill it.
+counter=30
+while [ ${counter} -gt 0 ]; do
+statusproc /usr/sbin/squid >/dev/null && break;
+sleep 1
+counter=$(( ${counter} - 1))
+done
+# Kill squid service, if still running.
+killproc /usr/sbin/squid >/dev/null
+# Trash remain pid file from squid.
+rm -rf /var/run/squid.pid 
+fi
+;;
+restart)
+$0 stop
+sleep 5
+$0 start
+;;
+reconfigure)
+/usr/sbin/squid -k reconfigure
+;;
+status)
+statusproc /usr/sbin/squid
+statusproc /usr/lib/squid/unlinkd
+;;
+flush)
+$0 stop
+echo > /var/log/cache/swap.state
+chown squid.squid /var/log/cache/swap.state
+sleep 1
+$0 start
+;;
+setperms)
+chown -R nobody.squid /var/updatecache/
+;;
+*)
+echo "Usage: $0 {start|stop|restart|status|flush}"
+exit 1
+;;
+esac
+# End $rc_base/init.d/squid
+==== /etc/init.d/squid , end before baris ini ====
+==== /etc/squid/squid.conf.pre.local , start after baris ini ====
+http_port 192.168.21.212:3128 tproxy
+https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key cipher=ECDHE-RSA-RC4-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:DHE-RSA-CAMELLIA128-SHA:AES128-SHA:RC4-SHA:HIGH:!aNULL:!MD5:!ADH
+‪#‎https_port‬ 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key options=NO_SSLv2,SINGLE_DH_USE cipher=HIGH
+refresh_all_ims on
+reload_into_ims on
+maximum_object_size_in_memory 0 KB
+strip_query_terms off
+cache_swap_high 98
+cache_swap_low 95
+qos_flows local-hit=0x30
+qos_flows sibling-hit=0x30
+qos_flows parent-hit=0x30
+dns_nameservers 208.67.222.222 208.67.220.220
+### semua acl
+acl youtube url_regex -i (youtube|googlevideo|videoplayback)
+acl ytvideo url_regex -i ^http.*videoplayback.*mime\=video.*
+‪#‎force‬ itag to itag=134 for mp4 or force itag to itag=243 for webm
+acl ytitag url_regex -i ^http.*videoplayback.*itag\=(160|133|135|136|137|138|264|266|298|299|167|168|169|170|218|219|242|244|245|246|247|248|271|272|278|302|303|308|313|315).*
+acl httptomiss http_status 302
+acl mimetext rep_mime_type -i mime-type ^text/html
+acl mimetext rep_mime_type -i mime-type ^text/plain
+acl patchpartial url_regex -i ^http.*(garena|gemscool|netmarble|valve|dota|winnerinter|lytogame|megaxus).*(patch|Patch).*
+acl tostoreid url_regex -i ^https?\:\/\/.*youtube.*api.*stats.*ads.*
+acl tostoreid url_regex -i ^https?\:\/\/.*youtube.*(ptracking|set_awesome).*
+acl tostoreid url_regex -i ^https?\:\/\/.*youtube.*(stream_204|watchtime|qoe|atr).*
+acl tostoreid url_regex -i ^https?\:\/\/.*youtube.*player_204.*
+acl tostoreid url_regex -i ^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*
+acl tostoreid url_regex -i ^https?\:\/\/.*utm.gif.*
+acl tostoreid url_regex -i ^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*
+acl tostoreid url_regex -i ^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*
+acl tostoreid url_regex -i ^https?\:\/\/.*datafilehost.*\/get\.php.*file\=(.*)
+acl tostoreid url_regex -i ^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*
+acl tostoreid url_regex -i ^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)
+acl tostoreid url_regex -i ^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3
+acl tostoreid url_regex -i ^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*
+acl tostoreid url_regex -i ^https?\:\/\/.*steampowered.*\/(client|depot)\/(.*)\?.*
+acl tostoreid url_regex -i ^https?\:\/\/.*steampowered.*\/(client|depot)\/(.*)
+acl tostoreid url_regex -i ^https?:\/\/www\.savefile\.co\:182\/.*\/(.*\.(mp4|flv|3gp)).*
+acl tostoreid url_regex -i ^https?\:\/\/.*(fbcdn\.net|akamaihd\.net)\/(hprofile|hphoto|hvideo).*\/([a-z]\d+x\d+\/.*\.(jpg|jpeg|bmp|png|gif|ico)|.*\.(mp4|mp3|flv|3gp|mkv))\?.*
+acl step1 at_step SslBump1
+acl step2 at_step SslBump2
+acl step3 at_step SslBump3
+acl getmethod method GET
+http_access deny ytvideo ytitag
+quick_abort_min 0 KB
+quick_abort_max 0 KB
+quick_abort_pct 98
+range_offset_limit none patchpartial
+range_offset_limit 128 KB !patchpartial
+reply_header_access Alternate-Protocol deny youtube
+cache deny localhost
+ssl_bump splice localhost
+ssl_bump peek step1 all
+ssl_bump stare step2 all
+ssl_bump splice step3 all
+sslcrtd_program /usr/lib/squid/ssl_crtd -s /var/ipfire/ssl_db -M 4MB
+sslcrtd_children 2000 startup=1 idle=1
+sslproxy_capath /etc/ssl/certs
+sslproxy_cert_error allow all
+sslproxy_flags DONT_VERIFY_PEER
+always_direct allow all
+ssl_unclean_shutdown on
+store_id_program /etc/squid/storeid.pl
+store_id_children 2000 startup=1 idle=1
+store_id_access deny !getmethod
+store_id_access allow tostoreid
+store_id_access deny all
+store_miss deny youtube httptomiss
+send_hit deny youtube httptomiss
+store_miss deny youtube mimetext
+send_hit deny youtube mimetext
+refresh_pattern . 0 95% 432000 override-expire override-lastmod ignore-no-cache ignore-no-store ignore-private ignore-auth ignore-must-revalidate
+max_stale 1 seconds
+==== /etc/squid/squid.conf.pre.local , end before baris ini ====
+==== /etc/squid/storeid.pl , start after baris ini ====
+#!/usr/bin/perl
+$|=1;
+while (<>) {
+@X = split;
+if ($X[0] =~ m/^https?\:\/\/.*/) {
+$x = $X[0]; 
+$_ = $X[0];
+$u = $X[0];
+} else { 
+$x = $X[1]; 
+$_ = $X[1];
+$u = $X[1];
+}
+‪#‎ads‬ youtube
+if ($x=~ m/^https?\:\/\/.*youtube.*api.*stats.*ads.*/){
+@content_v = m/[&?]content_v\=([^\&\s]*)/;
+@cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+unless (-e "/tmp/@cpn"){
+open FILE, ">/tmp/@cpn";
+print FILE "id=@content_v";
+close FILE;
+}
+$out="ERR";
+‪#‎tracking‬ youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*(ptracking|set_awesome).*/){
+@video_id = m/[&?]video_id\=([^\&\s]*)/;
+@cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+unless (-e "/tmp/@cpn"){
+open FILE, ">/tmp/@cpn";
+print FILE "id=@video_id";
+close FILE;
+}
+$out="ERR";
+
+‪#‎stream_204‬ youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*(stream_204|watchtime|qoe|atr).*/){
+@docid = m/[&?]docid\=([^\&\s]*)/;
+@cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+unless (-e "/tmp/@cpn"){
+open FILE, ">/tmp/@cpn";
+print FILE "id=@docid";
+close FILE;
+}
+$out="ERR";
+‪#‎player_204‬ youtube
+} elsif ($x=~ m/^https?\:\/\/.*youtube.*player_204.*/){
+@v = m/[&?]v\=([^\&\s]*)/;
+@cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+unless (-e "/tmp/@cpn"){
+open FILE, ">/tmp/@cpn";
+print FILE "id=@v";
+close FILE;
+}
+$out="ERR";
+‪#‎youtube‬
+} elsif ($x=~ m/^https?\:\/\/.*(youtube|googlevideo).*videoplayback.*/){
+@cpn = m/[%&?\/](cpn[%&=\/][^\&\s\/]*)/;
+@id = m/[%&?\/](id[%&=\/][^\&\s\/]*)/;
+@itag = m/[%&?\/](itag[%&=\/][^\&\s\/]*)/;
+@range = m/[%&?\/](range[%&=\/][^\&\s\/]*)/;
+@slices = m/[%&?\/](slices[%&=\/][^\&\s\/]*)/;
+@mime = m/[%&?\/](mime[%&=\/][^\&\s\/]*)/;
+if (defined(@cpn[0])){
+if (-e "/tmp/@cpn"){
+open FILE, "/tmp/@cpn";
+@id = <FILE>;
+close FILE;}
+}
+$out="OK store-id=storeid://pc-mikrotik/youtube/@id@itag@mime@range@slices";
+‪#‎utmgif‬
+} elsif ($x=~ m/^https?\:\/\/.*utm.gif.*/) {
+$out="OK store-id=storeid://pc-mikrotik/__utm.gif";
+‪#‎reverbnation‬
+} elsif ($x=~ m/^https?\:\/\/c2lo\.reverbnation\.com\/audio_player\/ec_stream_song\/(.*)\?.*/) {
+$out="OK store-id=http://pc-mikrotik/reverbnation/" . $1;
+‪#‎playstore‬
+} elsif ($x=~ m/^https?\:\/\/.*\.c\.android\.clients\.google\.com\/market\/GetBinary\/GetBinary\/(.*\/.*)\?.*/) {
+$out="OK store-id=http://pc-mikrotik/android/market/" . $1;
+‪#‎filehost‬
+} elsif ($x=~ m/^https?\:\/\/.*datafilehost.*\/get\.php.*file\=(.*)/) {
+$out="OK store-id=http://pc-mikrotik/datafilehost/" . $1;
+‪#‎speedtest‬
+} elsif ($x=~ m/^https?\:\/\/.*(speedtest|espeed).*\/(.*\.(jpg|txt|png|bmp)).*/) {
+$out="OK store-id=http://pc-mikrotik/speedtest/" . $2;
+‪#‎filehippo‬
+} elsif ($x=~ m/^https?\:\/\/.*\.filehippo\.com\/.*\/(.*\/.*)/) {
+$out="OK store-id=http://pc-mikrotik/filehippo/" . $1;
+‪#‎4shared‬ preview.mp3
+} elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/.*\/(.*\/.*)\/dlink.*preview.mp3/) {
+$out="OK store-id=http://pc-mikrotik/4shared/preview/" . $1;
+#4shared
+} elsif ($x=~ m/^https?\:\/\/.*\.4shared\.com\/download\/(.*\/.*)\?tsid.*/) {
+$out="OK store-id=http://pc-mikrotik/4shared/download/" . $1;
+#savefile-animeindo.tv
+} elsif ($x=~ m/^https?:\/\/www\.savefile\.co\:182\/.*\/(.*\.(mp4|flv|3gp)).*/) {
+$out="OK store-id=http://pc-mikrotik/savefile:182/" . $1;
+‪#‎steampowered‬ dota 2
+} elsif ($x=~ m/^https?\:\/\/.*steampowered.*\/(client|depot)\/(.*)\?.*/) {
+$out="OK store-id=http://steampowered/" . $1 . "/" . $2;
+#steampowered dota 2
+} elsif ($x=~ m/^https?\:\/\/.*steampowered.*\/(client|depot)\/(.*)/) {
+$out="OK store-id=http://steampowered/" . $1 . "/" . $2;
+‪#‎all‬ url
+} elsif ($x=~ m/^https?\:\/\/(.*)/) {
+$out="OK store-id=http://" . $1;
+#all url
+} elsif ($x=~ m/^ftp\:\/\/(.*)/) {
+$out="OK store-id=ftp://" . $1;
+} else {
+$out="ERR";
+}
+if ($X[0] =~ m/^https?\:\/\/.*/) {
+print "$out\n";
+} else {
+print $X[0] . " " . "$out\n";
+}
+}
+==== /etc/squid/storeid.pl , end before baris ini ====
+smile emoticon mudah2an bermanfaat smile emoticon
