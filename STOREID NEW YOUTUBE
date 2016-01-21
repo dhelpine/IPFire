@@ -1,0 +1,72 @@
+#!/usr/bin/perl
+#
+# storeid.pl with debug opt - based on storeurl.pl
+# @ http://www2.fh-lausitz.de/launic/comp/misc/squid/projekt_youtube/
+# referensi dan terimakasih khususnya pada Mr. Syaifudin JW aka Ucok Karnadi
+ 
+use IO::File;
+$|=1;
+STDOUT->autoflush(1);
+$debug=1;			## recommended:0
+$bypassallrules=0;		## recommended:0
+$sucks="";			## unused
+$sucks="sucks" if ($debug>=1);
+$timenow="";
+$printtimenow=1;  		## print timenow: 0|1
+my $logfile = '/tmp/storeid.log';
+
+open my $logfh, '>>', $logfile
+    or die "Couldn't open $logfile for appending: $!\n" if $debug;
+$logfh->autoflush(1) if $debug;
+
+while (<>) {
+$timenow=time()." " if ($printtimenow);
+print $logfh "$timenow"."in : input=$_" if ($debug>=1);
+chop; 
+my $myURL = $_;
+@X = split(" ",$myURL);
+if ($X[0] =~ m/^http.*/) {
+	$url		= $X[0];
+	$referer	= $X[1];
+	$googlevideo	= $X[0] ." ". $X[1];	
+} else { 
+	$chanel		= $X[0];
+	$url		= $X[1];
+	$referer	= $X[2];
+	$googlevideo	= $X[1] ." ". $X[2];
+}
+
+
+if ($bypassallrules){
+ $out="$url"; ## map 1:1
+#youtube
+} elsif ($googlevideo=~ m/^https?\:\/\/.*googlevideo.*videoplayback.*https?\:\/\/www\.youtube\.com.*(embed|v)[=%&\/](.*)/){
+    @id		= $2;
+    @itag	= m/[%&?\/]itag[%&=\/]([\d]*)/;
+    @range	= m/[%&?\/]range[%&=\/]([\d]*-[\d]*)/;
+    @mime	= m/[%&?\/]mime[%&=\/]([^\&\s]*)/;
+  $out="OK store-id=http://googlevideo/youtube/id=@id/itag=@itag/mime=@mime/range=@range";
+} else {
+  $out="ERR";
+}
+
+
+if ($X[0] =~ m/^http.*/) {
+	print $logfh "$timenow"."in : url=$url\n" if ($debug>=1);
+	print $logfh "$timenow"."in : referer=$referer\n" if ($debug>=1);
+	print $logfh "$timenow"."in : googlevideo=$googlevideo\n" if ($debug>=1);
+	print $logfh "$timenow"."out: $out\n" if ($debug>=1);
+	print $logfh "\n" if ($debug>=1);
+	print "$out\n";
+
+} else {
+	print $logfh "$timenow"."in : chanel=$chanel\n" if ($debug>=1);
+	print $logfh "$timenow"."in : url=$url\n" if ($debug>=1);
+	print $logfh "$timenow"."in : referer=$referer\n" if ($debug>=1);
+	print $logfh "$timenow"."in : googlevideo=$googlevideo\n" if ($debug>=1); 
+	print $logfh "$timenow"."out: $chanel $out\n" if ($debug>=1);
+	print $logfh "\n" if ($debug>=1);
+	print "$chanel $out\n";
+}
+}
+close $logfh if ($debug);
