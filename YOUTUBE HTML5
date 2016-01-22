@@ -1,0 +1,44 @@
+#link content
+https://r8---sn-2uuxa3vh-ngbe.googlevideo.com/videoplayback?id=o-AD6jAILInhzVhX3S1E3ve9pYA57KzFSg-vaRCRZcaKgy&upn=QnWNPXQSgOM&key=yt6&ip=36.73.35.107&ipbits=0&pl=22&signature=C852A771582D4F0C8D0C51E836A162B321B17A7E.CD317A828AD352CE8D71552473E31BECFC7029B5&sver=3&requiressl=yes&initcwndbps=630000&sparams=clen%2Cdur%2Cgir%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Crequiressl%2Csource%2Cupn%2Cexpire&fexp=9414671%2C9416126%2C9418643%2C9419444%2C9419476%2C9420452%2C9422342%2C9422401%2C9422596%2C9423662%2C9424488%2C9426724%2C9427057%2C9427714&itag=140&expire=1453422411&mime=audio%2Fmp4&source=youtube&mt=1453400690&mv=m&ms=au&lmt=1445327212448241&clen=24237739&gir=yes&mm=31&mn=sn-2uuxa3vh-ngbe&dur=1526.038&cpn=Bquaba06al1aq00E&alr=yes&keepalive=yes&ratebypass=yes&c=WEB&cver=html5&range=1273544-1591136&rn=17&rbuf=80016
+
+# referer
+https://www.youtube.com/embed/BHZCCUEzK0s
+https://www.youtube.com/v/BHZCCUEzK0s
+https://www.youtube.com/watch?v=BHZCCUEzK0s
+
+# regex 
+\/(watch\?v\=|embed\/|v\/)(.*)
+
+# Regex Tester
+http://rubular.com/r/83JpQKDWIf
+
+
+store_id_extras "%>a/%>A %un %>rm myip=%la myport=%lp referer=%{Referer}>h"  # Use string $X[0] & $X[6]
+store_id_extras "%{Referer}>h"  # If you use this config so your string must be $X[0] & $X[1]
+
+
+http://pastebin.com/4c85Yrjk
+
+#!/usr/bin/perl
+$|=1;
+while (<>) {
+my $chan = "";
+if (s/^(\d+\s+)//o) {
+$chan = $1;
+}
+@X = split(" ",$_);
+
+if ($X[0] =~ m/^https?\:\/\/.*(youtube|google).*videoplayback.*/){
+        @itag = m/[&?](itag=[0-9]*)/;
+        @id = m/[&?]id\=([^\&\s]*)/;
+        @mime = m/[&?](mime\=[^\&\s]*)/;
+        @cpn = m/[&?]cpn\=([^\&\s]*)/;
+        @range = m/[&?](range=[^\&\s]*)/;
+		if ($X[1] =~ m/\/(watch\?v\=|embed\/|v\/)(.*)/) { 
+			@id = $2;
+		}
+        print $chan, "OK store-id=http://googlevideo.squid.internal/id=@id&@itag&@range&@mime\n" ;
+} else {
+        print $chan, "ERR\n" ;
+}
+}
