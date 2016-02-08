@@ -1,0 +1,15 @@
+copykan squid ke /tmp
+cd /tmp
+tar -xvf squid-3.5.13.ipfire.tar.gz -C \
+chmod 755 /usr/sbin/squid
+chmod 755 /usr/bin/squidclient
+chmod 755 /usr/lib/squid/ssl_crtd
+
+***force flash video youtube***
+acl iphone browser -i regexp (iPhone|iPad)
+acl BB browser -i regexp (BlackBerry|PlayBook)
+acl Winphone browser -i regexp (Windows.*Phone|Trident|IEMobile)
+acl Android browser -i regexp Android
+acl youtube url_regex -i (youtube|googlevideo|videoplayback).*
+request_header_access User-Agent deny youtube !iphone !BB !Winphone !Android
+request_header_replace User-Agent Opera/9.80 (Windows NT 6.0) Presto/2.12.388 Version/12.14
