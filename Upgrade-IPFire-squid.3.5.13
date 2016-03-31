@@ -1,10 +1,13 @@
-IPFIRE upgrade squid 3.5.5
+IPFIRE upgrade squid 3.5.13
 1. copy kan file "s355.tar.gz" (https://drive.google.com/open?id=0B3i0cwEYlyL-VUJJSl9jeHIyakk&authuser=0)  ke /root via winscp
 2. via putty, menuju ke /root dengan cd /root
 3. /etc/init.d/squid stop
-4. tar -xvf squid-3.5.5-for-ipfire.tar.gz -C /
-5. hapus cache di /var/log/cache dengan winscp
-6. http://pastebin.com/raw.php?i=JjAUXmZK --->squid.conf.pre.local
+4. tar -xvf squid-3.5.13.tar.gz -C /
+5. chmod 755 /usr/sbin/squid
+6. chmod 755 /usr/bin/squidclient
+7. chmod 755 /usr/lib/squid/ssl_crtd
+8. hapus cache di /var/log/cache dengan winscp
+9. http://pastebin.com/raw.php?i=JjAUXmZK --->squid.conf.pre.local
 ===================================================================================
 http_port 192.168.21.212:3128 tproxy
 https_port 192.168.21.212:3129 tproxy ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB cert=/etc/squid/certs/squid.pem key=/etc/squid/certs/squid.key
